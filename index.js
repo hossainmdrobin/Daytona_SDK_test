@@ -1,51 +1,48 @@
-// const { Daytona } = require('@daytonaio/sdk');
-import { Daytona } from '@daytona/sdk';
-
-
+import { Daytona } from "@daytona/sdk";
 async function main() {
-    // 1. Initialize the Daytona client
-    // Make sure DAYTONA_API_KEY is set in your environment variables
-    const daytona = new Daytona({ apiKey: 'dtn_31f2afbbcf840196811dbb7838e39fcd1d543157668b6aa69ce83e75a9f335da' }) // Replace with your API key
+  const daytona = new Daytona({apiKey:"dtn_31f2afbbcf840196811dbb7838e39fcd1d543157668b6aa69ce83e75a9f335da"});
 
-    console.log('Creating sandbox...');
-    const sandbox = await daytona.create({
-        language: 'javascript',
-    });
+  console.log('Creating sandbox...');
+  const sandbox = await daytona.create({
+    language: 'javascript',
+  });
 
-    try {
-        const projectDir = '/home/daytona/workspace';
-        // Replace with any public Git repository URL
-        const repoUrl = 'https://github.com/hossainmdrobin/proagent_init.git';
-        const port = 3000; // Update this to the port your app runs on
+  try {
+    const projectDir = '/home/daytona/workspace';
+    
+    // ১. আপনার React Vite প্রজেক্টের GitHub repository URL দিন
+    const repoUrl = 'https://github.com/hossainmdrobin/proagent_init.git'; 
+    
+    // Vite-এর ডিফল্ট পোর্ট সাধারণত 5173 (package.json অনুযায়ী চেক করে নিন)
+    const port = 5173; 
 
-        console.log('Cloning repository...');
-        await sandbox.git.clone(repoUrl, projectDir);
+    console.log('Cloning repository...');
+    await sandbox.git.clone(repoUrl, projectDir);
 
-        console.log('Installing dependencies...');
-        await sandbox.process.executeCommand('npm install', {
-            cwd: projectDir,
-        });
+    console.log('Installing dependencies...');
+    await sandbox.process.executeCommand('npm install', projectDir);
 
-        console.log('Starting application...');
-        // Start your project in the background. 
-        // Ensure you bind your server to host '0.0.0.0' inside your app code so it accepts external traffic.
-        await sandbox.process.executeCommand('npm start', {
-            cwd: projectDir,
-        });
+    console.log('Starting Vite dev server in background...');
+    
+    // ২. গুরুত্বপূর্ণ: Vite-কে 0.0.0.0 তে এক্সপোজ করার জন্য --host এবং নির্দিষ্ট পোর্ট নিশ্চিত করার জন্য --port ব্যবহার করা হয়েছে
+    await sandbox.process.executeCommand(
+      `nohup npm run dev -- --host 0.0.0.0 --port ${port} > server.log 2>&1 &`,
+      projectDir
+    );
 
-        // Wait a few seconds for the server to spin up
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log('Waiting for Vite server to start...');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
-        console.log('Generating public URL...');
-        // Generate a signed public preview URL for the specified port
-        const signedUrl = await sandbox.getSignedPreviewUrl(port, 3600); // Valid for 1 hour
+    console.log('Generating public URL...');
+    // ৩. এক্সপোজড পোর্ট (5173)-এর জন্য Signed Preview URL তৈরি
+    const signedUrl = await sandbox.getSignedPreviewUrl(port, 3600);
 
-        console.log(`\nSuccess! View your project live at:`);
-        console.log(signedUrl.url);
+    console.log(`\nSuccess! View your React Vite project live at:`);
+    console.log(signedUrl.url);
 
-    } catch (error) {
-        console.error('Error running sandbox:', error);
-    }
+  } catch (error) {
+    console.error('Error running sandbox:', error);
+  }
 }
 
 main();
